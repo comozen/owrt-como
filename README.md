@@ -22,6 +22,10 @@ owrt-como/                     # 仓库根 = 包目录（UPDATE_PACKAGE 克隆�
 - `files/etc/apk/keys/vantage-signing.pem`：vantage 主题的 apk 签名公钥
   （SHA256 `c8a6c83eeb49ca2407932fb5e95785776128cef87db75ebaea0fe4171eee2157`）
 - `files/etc/apk/repositories.d/vantage.list`：vantage 的 apk 仓库地址
+- `files/etc/apk/keys/daeuniverse.pem`：daeuniverse（dae / honk）的 apk 签名公钥
+  （SHA256 `5aae30568b7e08f86ea3e72a19fa281d835ba4eff8ab38849abcd2b0884c6cd5`）
+- `files/etc/apk/repositories.d/daeuniverse.list`：dae / honk 的 apk 仓库地址
+  （`aarch64_cortex-a53` / 25.12，使用 `@daeuniverse` 标签）
 
 ## 加新文件
 
@@ -59,6 +63,30 @@ CONFIG_PACKAGE_owrt-como=y
 `scripts/feeds` 扫描时使用 `find -mindepth 1`，**不会识别仓库根目录的 Makefile**。
 如果以后想改成 feed 方式（源码 fork 的 `feeds.conf.default` 加一行 `src-git`），
 需要把 `Makefile` 和 `files/` 放进一层子目录（例如 `owrt-como/`），再调整 feed 配置。
+
+## dae / honk
+
+仓库里已带 daeuniverse 的签名公钥和 apk 仓库地址，刷机后可直接：
+
+```sh
+apk update
+apk add honk@daeuniverse luci-app-honk@daeuniverse \
+    luci-i18n-daeuniverse-zh-cn@daeuniverse vmlinux-btf-builtin@daeuniverse
+```
+
+注意：honk（以及 dae）需要内核 BTF。如果固件内核没有
+`/sys/kernel/btf/vmlinux`，honk 无法启动。构建时需要在 `PRIVATE.txt` 里设置：
+
+```
+CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
+CONFIG_KERNEL_DEBUG_INFO_BTF=y
+CONFIG_PACKAGE_kmod-sched-bpf=y
+CONFIG_PACKAGE_v2ray-geoip=y
+CONFIG_PACKAGE_v2ray-geosite=y
+```
+
+（`kmod-veth`、`kmod-nft-queue`、`kmod-nfnetlink-queue`、`kmod-sched-core`、
+`kmod-nf-conntrack` 在默认配置里已经是 `=y`。）
 
 ## 验证
 
