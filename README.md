@@ -36,30 +36,38 @@ owrt-como/files/usr/libexec/owrt-como/xxx.sh
 
 脚本记得 `chmod +x`，权限会随 `cp -pR` 保留。
 
-## 构建集成（不修改上游 CI 仓库的两种方式）
+## 构建集成
 
-前提：先 fork `VIKINGYFY/immortalwrt`，把 `MI-BE10000.yml` 里的 `WRT_REPO`
-指向你的 fork。CI 仓库里的 `Scripts/Packages.sh` **不用动**。
+### 当前采用：CI 仓库的 `Scripts/Packages.sh`
 
-### 方式 1：作为自定义 feed（包保持独立仓库，推荐）
+在 `comozen/OpenWRT-CI` 的 `Scripts/Packages.sh` 里加一行：
 
-在源码 fork 的 `feeds.conf.default` 末尾追加一行：
-
-```
-src-git como https://github.com/comozen/owrt-como.git
+```bash
+UPDATE_PACKAGE "owrt-como" "comozen/owrt-como" "main"
 ```
 
-WRT-CORE 每次构建都会执行 `feeds update -a && feeds install -a`，
-这个仓库会被拉到 `feeds/como`，包安装到 `package/feeds/como/owrt-como`。
-之后在 `Config/PRIVATE.txt` 里加：
+`UPDATE_PACKAGE` 会把本仓库 clone 到 `package/owrt-como/`，包本体在子目录
+`owrt-como/` 中，buildroot 扫描 `package/` 时会找到它（`PKG_NAME=owrt-como`）。
+然后在 `Config/PRIVATE.txt` 里加：
 
 ```
 CONFIG_PACKAGE_owrt-como=y
 ```
 
-以后改包只需要 push 到 `comozen/owrt-como`，不用动源码 fork。
+以后改包只需要 push 到本仓库，CI 每次构建都会重新 clone 最新提交。
 
-### 方式 2：直接放进源码 fork
+### 备选 1：源码 fork + 自定义 feed
+
+fork `VIKINGYFY/immortalwrt`，在 `feeds.conf.default` 末尾追加：
+
+```
+src-git como https://github.com/comozen/owrt-como.git
+```
+
+`feeds update -a` 会拉到 `feeds/como`，包安装到 `package/feeds/como/owrt-como`；
+`MI-BE10000.yml` 的 `WRT_REPO` 指向 fork。CI 仓库不用动。
+
+### 备选 2：直接放进源码 fork
 
 把本仓库的 `owrt-como/` 子目录复制到源码 fork 的 `package/owrt-como/`，
 `PRIVATE.txt` 里同样加 `CONFIG_PACKAGE_owrt-como=y`。
