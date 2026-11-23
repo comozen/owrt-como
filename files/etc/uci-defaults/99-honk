@@ -1,0 +1,28 @@
+#!/bin/sh
+# 首次启动：离线安装随固件打包的 honk（不访问网络）
+#
+# apk 文件在 /usr/share/owrt-como/apk/，签名公钥已在
+# /etc/apk/keys/daeuniverse.pem；依赖的 kmod 与 v2ray 地理数据已编进固件。
+# 安装成功后 LuCI 会出现「服务 → daehonk」菜单。
+#
+# 失败时保留日志 /tmp/honk-install.log，脚本本身仍返回 0，
+# 避免每次开机反复执行；需要重试时可手动执行：
+#   apk add --no-network --allow-untrusted /usr/share/owrt-como/apk/*.apk
+
+[ -x /usr/bin/apk ] || exit 0
+[ -x /usr/bin/honk-core ] && exit 0
+
+DIR=/usr/share/owrt-como/apk
+[ -d "$DIR" ] || exit 0
+
+set -- "$DIR"/*.apk
+[ -e "$1" ] || exit 0
+
+if apk add --no-network --allow-untrusted "$@" >/tmp/honk-install.log 2>&1; then
+	logger -t owrt-como "honk installed from bundled apk"
+	rm -f /tmp/honk-install.log
+else
+	logger -t owrt-como "honk install failed, see /tmp/honk-install.log"
+fi
+
+exit 0

@@ -66,28 +66,44 @@ CONFIG_PACKAGE_owrt-como=y
 
 ## dae / honk
 
-仓库里已带 daeuniverse 的签名公钥和 apk 仓库地址，刷机后可直接：
+仓库同时做了两件事：
+
+1. 带上 daeuniverse 的签名公钥和 apk 仓库地址：
+   - `files/etc/apk/keys/daeuniverse.pem`
+   - `files/etc/apk/repositories.d/daeuniverse.list`
+2. 把 honk 相关 apk 离线打包进固件：
+   - `files/usr/share/owrt-como/apk/honk-*.apk`
+   - `files/usr/share/owrt-como/apk/luci-app-honk-*.apk`
+   - `files/usr/share/owrt-como/apk/luci-lib-daeuniverse-*.apk`
+   - `files/usr/share/owrt-como/apk/luci-i18n-daeuniverse-zh-cn-*.apk`
+   - `files/usr/share/owrt-como/apk/vmlinux-btf-builtin-*.apk`
+
+首次开机时 `/etc/uci-defaults/99-honk` 会自动离线安装这些包
+（`apk add --no-network`，不访问网络），安装后 LuCI 出现「服务 → daehonk」。
+安装失败时日志在 `/tmp/honk-install.log`，可手动重试：
 
 ```sh
-apk update
-apk add honk@daeuniverse luci-app-honk@daeuniverse \
-    luci-i18n-daeuniverse-zh-cn@daeuniverse vmlinux-btf-builtin@daeuniverse
+apk add --no-network --allow-untrusted /usr/share/owrt-como/apk/*.apk
 ```
 
-注意：honk（以及 dae）需要内核 BTF。如果固件内核没有
-`/sys/kernel/btf/vmlinux`，honk 无法启动。构建时需要在 `PRIVATE.txt` 里设置：
+注意：
 
-```
-CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
-CONFIG_KERNEL_DEBUG_INFO_BTF=y
-CONFIG_PACKAGE_kmod-sched-bpf=y
-CONFIG_PACKAGE_v2ray-geoip=y
-CONFIG_PACKAGE_v2ray-geosite=y
-```
+- honk 需要内核 BTF（`/sys/kernel/btf/vmlinux`）。构建时 `PRIVATE.txt` 必须包含：
 
-（`kmod-veth`、`kmod-nft-queue`、`kmod-nfnetlink-queue`、`kmod-sched-core`、
-`kmod-nf-conntrack` 在默认配置里已经是 `=y`。）
+  ```
+  CONFIG_KERNEL_DEBUG_INFO_REDUCED=n
+  CONFIG_KERNEL_DEBUG_INFO_BTF=y
+  CONFIG_PACKAGE_kmod-sched-bpf=y
+  CONFIG_PACKAGE_v2ray-geoip=y
+  CONFIG_PACKAGE_v2ray-geosite=y
+  ```
 
+  （`kmod-veth`、`kmod-nft-queue`、`kmod-nfnetlink-queue`、`kmod-sched-core`、
+  `kmod-nf-conntrack` 默认已是 `=y`。）
+
+- honk 安装在 overlay 上，约占用几十 MB；普通 sysupgrade 会保留，`-n` 清空或
+  重新刷机后由上面的 uci-defaults 自动装回。
+- honk 与 dae 不能同时运行。
 ## 验证
 
 固件里应存在：
