@@ -1,62 +1,69 @@
 # owrt-como
 
-个人自定义文件包（OpenWrt / ImmortalWrt）。把 `files/` 下的内容原样安装进固件
-rootfs，不编译任何源码。
+个人自定义文件包（OpenWrt / ImmortalWrt）。把 `owrt-como/files/` 下的内容原样安装进
+固件 rootfs，不编译任何源码。
 
 ## 目录结构
 
 ```
-owrt-como/
-├── Makefile
-└── files/                    # 这里的路径 = 固件里的绝对路径
-    └── etc/
-        ├── apk/
-        │   ├── keys/
-        │   │   └── vantage-signing.pem
-        │   └── repositories.d/
-        │       └── vantage.list
-        └── ...
+owrt-como/                     # 仓库根（可作为 feeds 仓库使用）
+├── README.md
+└── owrt-como/                 # 包目录（feed 扫描需要一层子目录）
+    ├── Makefile
+    └── files/                 # 这里的路径 = 固件里的绝对路径
+        └── etc/
+            ├── apk/
+            │   ├── keys/
+            │   │   └── vantage-signing.pem
+            │   └── repositories.d/
+            │       └── vantage.list
+            └── ...
 ```
 
-- `files/etc/apk/keys/vantage-signing.pem`：vantage 主题的 apk 签名公钥
+- `owrt-como/files/etc/apk/keys/vantage-signing.pem`：vantage 主题的 apk 签名公钥
   （SHA256 `c8a6c83eeb49ca2407932fb5e95785776128cef87db75ebaea0fe4171eee2157`）
-- `files/etc/apk/repositories.d/vantage.list`：vantage 的 apk 仓库地址
+- `owrt-como/files/etc/apk/repositories.d/vantage.list`：vantage 的 apk 仓库地址
 
 ## 加新文件
 
-直接在 `files/` 下按固件里的路径建文件即可，例如：
+直接在 `owrt-como/files/` 下按固件里的路径建文件即可，例如：
 
 ```
-files/etc/uci-defaults/99-owrt-como
-files/etc/sysctl.d/99-owrt-como.conf
-files/usr/libexec/owrt-como/xxx.sh
+owrt-como/files/etc/uci-defaults/99-owrt-como
+owrt-como/files/etc/sysctl.d/99-owrt-como.conf
+owrt-como/files/usr/libexec/owrt-como/xxx.sh
 ```
 
 脚本记得 `chmod +x`，权限会随 `cp -pR` 保留。
 
-## 构建集成
+## 构建集成（不修改上游 CI 仓库的两种方式）
 
-两种方式，任选其一：
+前提：先 fork `VIKINGYFY/immortalwrt`，把 `MI-BE10000.yml` 里的 `WRT_REPO`
+指向你的 fork。CI 仓库里的 `Scripts/Packages.sh` **不用动**。
 
-### A. 独立仓库 + `Scripts/Packages.sh`
+### 方式 1：作为自定义 feed（包保持独立仓库，推荐）
 
-在 `Scripts/Packages.sh` 里加一行：
+在源码 fork 的 `feeds.conf.default` 末尾追加一行：
 
-```bash
-UPDATE_PACKAGE "owrt-como" "comozen/owrt-como" "main"
+```
+src-git como https://github.com/comozen/owrt-como.git
 ```
 
-然后在 `Config/PRIVATE.txt` 里：
+WRT-CORE 每次构建都会执行 `feeds update -a && feeds install -a`，
+这个仓库会被拉到 `feeds/como`，包安装到 `package/feeds/como/owrt-como`。
+之后在 `Config/PRIVATE.txt` 里加：
 
 ```
 CONFIG_PACKAGE_owrt-como=y
 ```
 
-### B. 放进源码 fork
+以后改包只需要 push 到 `comozen/owrt-como`，不用动源码 fork。
 
-把 `owrt-como/` 整个目录放到源码 fork 的 `package/owrt-como/`，
-`BE10000.yml` 的 `WRT_REPO` 指向该 fork，`PRIVATE.txt` 里同样加
-`CONFIG_PACKAGE_owrt-como=y`。这种方式 CI 仓库零冲突。
+### 方式 2：直接放进源码 fork
+
+把本仓库的 `owrt-como/` 子目录复制到源码 fork 的 `package/owrt-como/`，
+`PRIVATE.txt` 里同样加 `CONFIG_PACKAGE_owrt-como=y`。
+新目录不会和上游冲突，但每次改包都要同步到 fork。
 
 ## 验证
 
