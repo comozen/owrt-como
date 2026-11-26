@@ -1,0 +1,17 @@
+#!/bin/sh
+# 手动更新 honk 相关包（从 daeuniverse 仓库）
+#
+# 离线安装的本地 .apk 会把包锁定在 /etc/apk/world（honk><Q1…），
+# 用 @daeuniverse 重新声明即可解除锁定并升级到仓库里的最新版。
+set -e
+
+apk update
+apk add -u \
+	honk@daeuniverse \
+	luci-app-honk@daeuniverse \
+	luci-lib-daeuniverse@daeuniverse \
+	luci-i18n-daeuniverse-zh-cn@daeuniverse \
+	vmlinux-btf-builtin@daeuniverse
+
+echo "honk 已更新：$(apk info -v honk 2>/dev/null | head -1)"
+echo "如服务在运行，重启生效：/etc/init.d/honk restart"

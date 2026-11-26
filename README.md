@@ -104,6 +104,31 @@ apk add --no-network --allow-untrusted /usr/share/owrt-como/apk/*.apk
 - honk 安装在 overlay 上，约占用几十 MB；普通 sysupgrade 会保留，`-n` 清空或
   重新刷机后由上面的 uci-defaults 自动装回。
 - honk 与 dae 不能同时运行。
+## honk 版本维护
+
+- **构建时**：CI 的 `Scripts/Packages.sh` 会从 daeuniverse 仓库拉取这 5 个 apk 的最新版本，
+  覆盖本仓库里的 `files/usr/share/owrt-como/apk/`（下载失败则保留仓库里的版本，不影响构建）。
+- **刷机后**：首次开机由 `/etc/uci-defaults/99-honk` 离线安装这些 apk，
+  所以固件里是**构建时**的最新版本。
+- **手动更新**（不自动开机升级）：
+
+  ```sh
+  honk-update
+  ```
+
+  它等价于：
+
+  ```sh
+  apk update
+  apk add -u honk@daeuniverse luci-app-honk@daeuniverse \
+      luci-lib-daeuniverse@daeuniverse \
+      luci-i18n-daeuniverse-zh-cn@daeuniverse \
+      vmlinux-btf-builtin@daeuniverse
+  ```
+
+  本地 apk 安装会把包锁定在 `/etc/apk/world`（`honk><Q1…`），
+  `@daeuniverse` 重新声明会解除锁定，之后 LuCI 的更新功能也能正常使用。
+
 ## 验证
 
 固件里应存在：
